@@ -1,0 +1,193 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dependencyinjectionAdminLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dependencyinjectionAdminLoginPassword": {
+      "type": "securestring"
+    },
+    "dependencyinjection-dbName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dependencyinjection-dbCollation": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "dependencyinjection-dbEdition": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "dependencyinjection-dbRequestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "DIName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "DISKUName": {
+      "type": "string",
+      "allowedValues": [
+        "Basic",
+        "Standard"
+      ],
+      "defaultValue": "Standard"
+    },
+    "DISKUFamily": {
+      "type": "string",
+      "allowedValues": [
+        "C"
+      ],
+      "defaultValue": "C"
+    },
+    "DISKUCapacity": {
+      "type": "int",
+      "allowedValues": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "defaultValue": 0
+    },
+    "DIRedisVersion": {
+      "type": "string",
+      "allowedValues": [
+        "2.8"
+      ],
+      "defaultValue": "2.8"
+    },
+    "DIcacheName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "DIcacheSKUName": {
+      "type": "string",
+      "allowedValues": [
+        "Basic",
+        "Standard"
+      ],
+      "defaultValue": "Standard"
+    },
+    "DIcacheSKUFamily": {
+      "type": "string",
+      "allowedValues": [
+        "C"
+      ],
+      "defaultValue": "C"
+    },
+    "DIcacheSKUCapacity": {
+      "type": "int",
+      "allowedValues": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "defaultValue": 0
+    },
+    "DIcacheRedisVersion": {
+      "type": "string",
+      "allowedValues": [
+        "2.8"
+      ],
+      "defaultValue": "2.8"
+    }},
+  "variables": {
+    "dependencyinjectionName": "[concat('dependencyinjection', uniqueString(resourceGroup().id))]"},
+  "resources": [
+    {
+      "name": "[variables('dependencyinjectionName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2014-04-01-preview",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "dependencyinjection"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('dependencyinjectionAdminLogin')]",
+        "administratorLoginPassword": "[parameters('dependencyinjectionAdminLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('dependencyinjectionName'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[parameters('dependencyinjection-dbName')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('dependencyinjectionName'))]"
+          ],
+          "tags": {
+            "displayName": "dependencyinjection-db"
+          },
+          "properties": {
+            "collation": "[parameters('dependencyinjection-dbCollation')]",
+            "edition": "[parameters('dependencyinjection-dbEdition')]",
+            "maxSizeBytes": "1073741824",
+            "requestedServiceObjectiveName": "[parameters('dependencyinjection-dbRequestedServiceObjectiveName')]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[parameters('DIcacheName')]",
+      "type": "Microsoft.Cache/Redis",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-04-01",
+      "dependsOn": [ ],
+      "tags": {
+        "displayName": "DIcache"
+      },
+      "properties": {
+        "sku": {
+          "name": "[parameters('DIcacheSKUName')]",
+          "family": "[parameters('DIcacheSKUFamily')]",
+          "capacity": "[parameters('DIcacheSKUCapacity')]"
+        },
+        "redisVersion": "[parameters('DIcacheRedisVersion')]"
+      }
+    }],
+  "outputs": {}
+}
